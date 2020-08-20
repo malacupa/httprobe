@@ -26,19 +26,24 @@ func (p probeArgs) String() string {
 	return strings.Join(p, ",")
 }
 
+func usage() {
+	fmt.Println("Usage: cat tcp-ipp.csv | httprobe")
+	fmt.Println("")
+	fmt.Println("Get all HTTP(S) URLs based on input from ipp file. Outputs lines in format <proto>:<host>:<port>.")
+	fmt.Println("See github.com/tomnomnom/httprobe for original script.")
+	fmt.Println("")
+	flag.PrintDefaults()
+}
+
+// Confirms HTTP is listening, doesn't care about virtual hosts
+// Accepts <ipp.csv> file
 func main() {
+
+	flag.Usage = usage
 
 	// concurrency flag
 	var concurrency int
 	flag.IntVar(&concurrency, "c", 20, "set the concurrency level (split equally between HTTPS and HTTP requests)")
-
-	// probe flags
-	var probes probeArgs
-	flag.Var(&probes, "p", "add additional probe (proto:port)")
-
-	// skip default probes flag
-	var skipDefault bool
-	flag.BoolVar(&skipDefault, "s", false, "skip the default probes (http:80 and https:443)")
 
 	// timeout flag
 	var to int
@@ -155,44 +160,14 @@ func main() {
 	// accept domains on stdin
 	sc := bufio.NewScanner(os.Stdin)
 	for sc.Scan() {
-		domain := strings.ToLower(sc.Text())
+		line := strings.Split(strings.ToLower(sc.Text()), ",")
+		host := line[0]
 
-		// submit standard port checks
-		if !skipDefault {
-			httpsURLs <- domain
-		}
+		// TODO add HTTP only option?
 
-		// Adding port templates
-		xlarge := []string{"81", "300", "591", "593", "832", "981", "1010", "1311", "2082", "2087", "2095", "2096", "2480", "3000", "3128", "3333", "4243", "4567", "4711", "4712", "4993", "5000", "5104", "5108", "5800", "6543", "7000", "7396", "7474", "8000", "8001", "8008", "8014", "8042", "8069", "8080", "8081", "8088", "8090", "8091", "8118", "8123", "8172", "8222", "8243", "8280", "8281", "8333", "8443", "8500", "8834", "8880", "8888", "8983", "9000", "9043", "9060", "9080", "9090", "9091", "9200", "9443", "9800", "9981", "12443", "16080", "18091", "18092", "20720", "28017"}
-		large := []string{"81", "591", "2082", "2087", "2095", "2096", "3000", "8000", "8001", "8008", "8080", "8083", "8443", "8834", "8888"}
-
-		// submit any additional proto:port probes
-		for _, p := range probes {
-			switch p {
-			case "xlarge":
-				for _, port := range xlarge {
-					httpsURLs <- fmt.Sprintf("%s:%s", domain, port)
-				}
-			case "large":
-				for _, port := range large {
-					httpsURLs <- fmt.Sprintf("%s:%s", domain, port)
-				}
-			default:
-				pair := strings.SplitN(p, ":", 2)
-				if len(pair) != 2 {
-					continue
-				}
-
-				// This is a little bit funny as "https" will imply an
-				// http check as well unless the --prefer-https flag is
-				// set. On balance I don't think that's *such* a bad thing
-				// but it is maybe a little unexpected.
-				if strings.ToLower(pair[0]) == "https" {
-					httpsURLs <- fmt.Sprintf("%s:%s", domain, pair[1])
-				} else {
-					httpURLs <- fmt.Sprintf("%s:%s", domain, pair[1])
-				}
-			}
+		for _, port := range line[1:] {
+			// HTTP only is not supported now
+			httpsURLs <- fmt.Sprintf("%s:%s", host, port)
 		}
 	}
 

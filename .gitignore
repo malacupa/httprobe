@@ -4,3 +4,4 @@ httprobe
 *.tgz
 *.zip
 *.exe
+*.csv
