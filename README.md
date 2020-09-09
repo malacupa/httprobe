@@ -1,11 +1,11 @@
 # httprobe
 
-Take a list of domains and probe for working http and https servers.
+Fork of awesome `github.com/tomnomnom/httprobe`. It changes mainly one thing for a different use-case which is you pass IP-ports CSV file (each line is IP,port1,port2,...) to stdin of httprobe and it scans those, doesn't try out standard HTTP/HTTPS ports as original httprobe.
 
 ## Install
 
 ```
-▶ go get -u github.com/tomnomnom/httprobe
+▶ go get -u github.com/malacupa/httprobe
 ```
 
 ## Basic Usage
@@ -14,25 +14,13 @@ httprobe accepts line-delimited domains on `stdin`:
 
 ```
 ▶ cat recon/example/domains.txt
-example.com
-example.edu
-example.net
+example.com:80
+example.edu:8384
+example.net:123
 ▶ cat recon/example/domains.txt | httprobe
-http://example.com
-http://example.net
-http://example.edu
-https://example.com
-https://example.edu
-https://example.net
-```
-
-## Extra Probes
-
-By default httprobe checks for HTTP on port 80 and HTTPS on port 443. You can add additional
-probes with the `-p` flag by specifying a protocol and port pair:
-
-```
-▶ cat domains.txt | httprobe -p http:81 -p https:8443
+http://example.com:80
+http://example.net:123
+https://example.edu:8384
 ```
 
 ## Concurrency
@@ -49,23 +37,6 @@ You can change the timeout by using the `-t` flag and specifying a timeout in mi
 
 ```
 ▶ cat domains.txt | httprobe -t 20000
-```
-
-## Skipping Default Probes
-
-If you don't want to probe for HTTP on port 80 or HTTPS on port 443, you can use the
-`-s` flag. You'll need to specify the probes you do want using the `-p` flag:
-
-```
-▶ cat domains.txt | httprobe -s -p https:8443
-```
-
-## Prefer HTTPS
-
-Sometimes you don't care about checking HTTP if HTTPS is working. You can do that with the `--prefer-https` flag:
-
-```
-▶ cat domains.txt | httprobe --prefer-https
 ```
 
 ## Docker
